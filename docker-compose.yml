@@ -1,0 +1,14 @@
+name: gbpostmark
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-gbpostmark}-frontend:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-gbpostmark}-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-21824}:80"
+    environment:
+      - TZ=Asia/Shanghai

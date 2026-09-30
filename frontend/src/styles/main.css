@@ -1,0 +1,128 @@
+:root {
+  --gb-ink: #3f3226;
+  --gb-brown: #8c3b2e;
+  --gb-line: #e4d9c8;
+  --gb-paper: #fbf7f0;
+  --gb-muted: #7c6a54;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', system-ui,
+    sans-serif;
+  color: var(--gb-ink);
+  background: var(--gb-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: Georgia, 'Songti SC', 'Noto Serif SC', serif;
+}
+
+.gb-page {
+  padding: 18px 22px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.gb-page__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.gb-page__title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--gb-brown);
+  letter-spacing: 0.02em;
+}
+
+.gb-page__subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--gb-muted);
+}
+
+.gb-panel {
+  border: 1px solid var(--gb-line);
+  border-radius: 12px;
+  background: #fffdf8;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.gb-panel__title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: #5d3325;
+}
+
+.gb-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.gb-grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+}
+
+.gb-empty {
+  padding: 26px;
+  text-align: center;
+  color: var(--gb-muted);
+  border: 1px dashed var(--gb-line);
+  border-radius: 10px;
+  background: #fffdf8;
+}
+
+.gb-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px 18px;
+  margin: 0;
+}
+
+.gb-facts dt {
+  font-size: 12px;
+  color: var(--gb-muted);
+}
+
+.gb-facts dd {
+  margin: 2px 0 8px;
+  font-size: 14px;
+  color: var(--gb-ink);
+  font-weight: 600;
+}
+
+.gb-figure {
+  border: 1px solid var(--gb-line);
+  border-radius: 10px;
+  background: #fffdf8;
+  padding: 10px;
+  text-align: center;
+}
+
+.gb-figure img {
+  max-width: 100%;
+  border-radius: 6px;
+  display: block;
+  margin: 0 auto 8px;
+}
