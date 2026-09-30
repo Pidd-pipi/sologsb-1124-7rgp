@@ -53,6 +53,7 @@ docker compose down
 | `/covers/:id` | 实寄封详情（正反面图、票戳组合表、寄递事实时间轴） | Cover、StamplessEntry、PostalRoute |
 | `/routes/:id` | 邮路编辑器（节点拖拽排序、增删中转地、按节点日期自动算全程天数） | PostalRoute |
 | `/search` | 综合检索（跨三类按关键词与年代分组检索） | Postmark、Cover、PostalRoute |
+| `/merge` | 离线合并通道（导出/导入 `.gbpostmark.json` 档案，按稳定键对账、冲突挑选、引用补齐、事务提交） | 全部模型 + Asset |
 
 ## 五、共享组件与 hooks / utils
 
@@ -99,6 +100,7 @@ sologsb-1124/
 
 ## 八、数据存储说明
 
-- **编目数据**：IndexedDB（Dexie，库名 `gbpostmark`）。表结构含版本号，`version(2)` 会把戳样与封图迁移到独立的 `assets` 表并补齐历史记录缺省字段；首次运行写入样例数据，便于直接查看各页面效果。
+- **编目数据**：IndexedDB（Dexie，库名 `gbpostmark`）。表结构含版本号，`version(2)` 会把戳样与封图迁移到独立的 `assets` 表并补齐历史记录缺省字段；首次运行写入样例数据，便于直接查看各页面效果。`version(3)` 为票戳组合增加跨机稳定键 `entryKey`，按「所属封号 + 组合内容」为旧记录确定性回填，使升级后的历史数据同样能参加离线合并。
+- **离线合并**：两台电脑各自在「离线合并」页导出 `.gbpostmark.json` 档案（含编目数据、原图与创建/修改时间），回家导入对端档案即可对账。合并引擎（`frontend/src/utils/merge.ts`）以编目号/封号/邮路号/票戳组合稳定键识别同一记录：同键双方修改逐字段并列双方内容与时间供挑选；封→销票邮戳、封→邮路、票戳组合→封等跨对象引用先对账，被引用对象在档案中缺失（对端旧编号）时拦截，缺项补齐重新导出后才能完成；全部写入在单个 Dexie 事务内提交，任一步失败整体回滚，现有数据保持原样、可重新导入重试。合并逻辑的端到端验证见 `frontend/scripts/merge-check.mts`（`npx vite-node scripts/merge-check.mts`）。
 - **表单草稿**：localStorage，键名前缀 `gbpostmark:draft:`（邮戳、实寄封、邮路各一份），刷新或误关页面后可恢复，可一键清除。
 - **无后端**：不请求任何外部接口，容器无状态，不使用数据库服务与命名卷；清除浏览器站点数据即等于清空数据。

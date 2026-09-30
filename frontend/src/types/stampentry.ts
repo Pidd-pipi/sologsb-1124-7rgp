@@ -14,7 +14,13 @@ export type CoverPosition =
 
 export interface StamplessEntry {
   id?: number
-  /** 所属实寄封 id */
+  /**
+   * 跨机合并使用的稳定键：同一条票戳组合在两台电脑上保持一致。
+   * 新建时由 utils/id 的 uid('ek') 生成；v3 升级为历史记录回填确定性键。
+   * 缺失时合并引擎会按「邮票/面值/年份/齿度/变体/位置」内容键兜底识别。
+   */
+  entryKey: string
+  /** 所属实寄封 id（仅本机有效，跨机引用由合并引擎按封号对账重写） */
   coverId: number
   /** 邮票名称 */
   stampName: string
@@ -43,6 +49,7 @@ export const COVER_POSITIONS: CoverPosition[] = [
 /** 生成一条空白票戳组合记录，供表单初始化使用。 */
 export function createEmptyStampEntry(coverId: number): StamplessEntry {
   return {
+    entryKey: '',
     coverId,
     stampName: '',
     denomination: 0,

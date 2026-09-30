@@ -1,9 +1,37 @@
 /** 编目号 / 唯一键 / 时间戳等通用工具。 */
+import type { StamplessEntry } from '@/types/stampentry'
 
 /** 生成跨表使用的本地唯一键（邮路节点拖拽排序等场景）。 */
 export function uid(prefix = 'k'): string {
   const rnd = Math.random().toString(36).slice(2, 8)
   return `${prefix}-${Date.now().toString(36)}-${rnd}`
+}
+
+/** 新建票戳组合时分配的跨机稳定键。 */
+export function newEntryKey(): string {
+  return uid('ek')
+}
+
+type EntryContentKeyFields = Pick<
+  StamplessEntry,
+  'stampName' | 'denomination' | 'issueYear' | 'perforation' | 'variety' | 'positionOnCover'
+>
+
+/**
+ * 票戳组合的内容稳定键：v3 升级时为历史记录回填，合并时为缺少 entryKey 的档案兜底。
+ * 以「所属封号 + 组合内容」生成，两台电脑对同一条组合算出的键一致，不依赖各自表内 id。
+ */
+export function entryContentKey(coverNo: string, entry: EntryContentKeyFields): string {
+  return [
+    'ekv1',
+    (coverNo || '').trim() || 'unknown-cover',
+    (entry.stampName || '').trim(),
+    entry.denomination,
+    entry.issueYear,
+    (entry.perforation || '').trim(),
+    entry.variety,
+    entry.positionOnCover
+  ].join('|')
 }
 
 /** 当前时间的 ISO 字符串。 */

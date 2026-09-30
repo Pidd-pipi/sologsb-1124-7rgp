@@ -16,6 +16,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/covers')) return '/covers'
   if (path.startsWith('/postmarks')) return '/postmarks'
   if (path.startsWith('/search')) return '/search'
+  if (path.startsWith('/merge')) return '/merge'
   return ''
 })
 
@@ -53,6 +54,7 @@ onMounted(async () => {
         <el-menu-item index="/postmarks">邮戳目录</el-menu-item>
         <el-menu-item index="/covers">实寄封目录</el-menu-item>
         <el-menu-item index="/search">综合检索</el-menu-item>
+        <el-menu-item index="/merge">离线合并</el-menu-item>
       </el-menu>
       <div class="app-aside">
         <el-select

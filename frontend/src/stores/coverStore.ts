@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { db, saveAsset } from '@/utils/db'
 import type { Cover, FrankingItem } from '@/types/cover'
 import type { StamplessEntry } from '@/types/stampentry'
-import { nextSerialNo, nowIso } from '@/utils/id'
+import { nextSerialNo, newEntryKey, nowIso } from '@/utils/id'
 import type { ImagePayload } from './postmarkStore'
 
 export const useCoverStore = defineStore('cover', () => {
@@ -74,7 +74,11 @@ export const useCoverStore = defineStore('cover', () => {
   }
 
   async function addEntry(input: StamplessEntry): Promise<number> {
-    const id = await db.stampEntries.add({ ...input, createdAt: nowIso() })
+    const id = await db.stampEntries.add({
+      ...input,
+      entryKey: input.entryKey || newEntryKey(),
+      createdAt: nowIso()
+    })
     await load()
     return id
   }

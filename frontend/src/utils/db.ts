@@ -8,10 +8,11 @@ import type { Cover } from '@/types/cover'
 import type { PostalRoute } from '@/types/route'
 import type { StamplessEntry } from '@/types/stampentry'
 import type { AssetOwnerType, AssetSide, CatalogAsset } from '@/types/asset'
+import { entryContentKey } from '@/utils/id'
 
 export const DB_NAME = 'gbpostmark'
 /** 当前数据结构版本号，升级迁移写在下面对应的 version() 中 */
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 export class GbPostmarkDatabase extends Dexie {
   postmarks!: Table<Postmark, number>
@@ -71,6 +72,46 @@ export class GbPostmarkDatabase extends Dexie {
           .modify((rt: Partial<PostalRoute>) => {
             if (!Array.isArray(rt.nodes)) rt.nodes = []
             if (typeof rt.totalDays !== 'number') rt.totalDays = 0
+          })
+      })
+
+    // v3：票戳组合增加跨机稳定键 entryKey（按所属封号 + 组合内容确定性回填，
+    // 使旧数据升级后仍能在离线合并中被识别为同一记录）
+    this.version(DB_VERSION)
+      .stores({
+        postmarks:
+          '++id, pmNo, type, office, province, yearFrom, yearTo, scarceLevel, inkColor, bilingual',
+        covers:
+          '++id, coverNo, sentFrom, sentTo, postDate, conditionGrade, registered, routeId, acquireFrom',
+        routes: '++id, routeNo, name, era, transport, totalDays',
+        stampEntries: '++id, coverId, entryKey, stampName, variety, issueYear',
+        assets: '++id, ownerType, ownerId, side, [ownerType+ownerId]'
+      })
+      .upgrade(async (tx) => {
+        const coverNoById = new Map<number, string>()
+        await tx
+          .table('covers')
+          .toCollection()
+          .each((cv: Cover) => {
+            if (typeof cv.id === 'number') coverNoById.set(cv.id, cv.coverNo)
+          })
+        await tx
+          .table('stampEntries')
+          .toCollection()
+          .modify((entry: Partial<StamplessEntry>) => {
+            if (!entry.entryKey) {
+              const coverNo =
+                (typeof entry.coverId === 'number' && coverNoById.get(entry.coverId)) || ''
+              entry.entryKey = entryContentKey(coverNo, {
+                stampName: entry.stampName ?? '',
+                denomination: entry.denomination ?? 0,
+                issueYear: entry.issueYear ?? 0,
+                perforation: entry.perforation ?? '',
+                variety: (entry.variety ?? '正品') as StamplessEntry['variety'],
+                positionOnCover:
+                  (entry.positionOnCover ?? '右上') as StamplessEntry['positionOnCover']
+              })
+            }
           })
       })
   }
@@ -456,73 +497,90 @@ function seedCovers(): Cover[] {
 }
 
 function seedStampEntries(): StamplessEntry[] {
+  const ek = (
+    coverNo: string,
+    e: Omit<StamplessEntry, 'id' | 'coverId' | 'entryKey'>,
+    coverId: number
+  ): StamplessEntry => ({ ...e, coverId, entryKey: entryContentKey(coverNo, e) })
   return [
-    {
-      id: 1,
-      coverId: 1,
-      stampName: '蟠龙邮票',
-      denomination: 3,
-      issueYear: 1908,
-      perforation: 'P14',
-      variety: '正品',
-      positionOnCover: '右上',
-      createdAt: SEED_TS
-    },
-    {
-      id: 2,
-      coverId: 1,
-      stampName: '蟠龙邮票',
-      denomination: 1,
-      issueYear: 1908,
-      perforation: 'P14',
-      variety: '移位',
-      positionOnCover: '中部',
-      createdAt: SEED_TS
-    },
-    {
-      id: 3,
-      coverId: 2,
-      stampName: '帆船邮票',
-      denomination: 4,
-      issueYear: 1913,
-      perforation: 'P14',
-      variety: '正品',
-      positionOnCover: '右上',
-      createdAt: SEED_TS
-    },
-    {
-      id: 4,
-      coverId: 3,
-      stampName: '孙中山像邮票',
-      denomination: 5,
-      issueYear: 1931,
-      perforation: 'P12.5',
-      variety: '组外品',
-      positionOnCover: '左上',
-      createdAt: SEED_TS
-    },
-    {
-      id: 5,
-      coverId: 3,
-      stampName: '孙中山像邮票',
-      denomination: 2,
-      issueYear: 1931,
-      perforation: 'P12.5',
-      variety: '漏齿',
-      positionOnCover: '左下',
-      createdAt: SEED_TS
-    },
-    {
-      id: 6,
-      coverId: 4,
-      stampName: '普八邮票',
-      denomination: 8,
-      issueYear: 1955,
-      perforation: 'P14',
-      variety: '正品',
-      positionOnCover: '右上',
-      createdAt: SEED_TS
-    }
+    ek(
+      'CV-0001',
+      {
+        stampName: '蟠龙邮票',
+        denomination: 3,
+        issueYear: 1908,
+        perforation: 'P14',
+        variety: '正品',
+        positionOnCover: '右上',
+        createdAt: SEED_TS
+      },
+      1
+    ),
+    ek(
+      'CV-0001',
+      {
+        stampName: '蟠龙邮票',
+        denomination: 1,
+        issueYear: 1908,
+        perforation: 'P14',
+        variety: '移位',
+        positionOnCover: '中部',
+        createdAt: SEED_TS
+      },
+      1
+    ),
+    ek(
+      'CV-0002',
+      {
+        stampName: '帆船邮票',
+        denomination: 4,
+        issueYear: 1913,
+        perforation: 'P14',
+        variety: '正品',
+        positionOnCover: '右上',
+        createdAt: SEED_TS
+      },
+      2
+    ),
+    ek(
+      'CV-0003',
+      {
+        stampName: '孙中山像邮票',
+        denomination: 5,
+        issueYear: 1931,
+        perforation: 'P12.5',
+        variety: '组外品',
+        positionOnCover: '左上',
+        createdAt: SEED_TS
+      },
+      3
+    ),
+    ek(
+      'CV-0003',
+      {
+        stampName: '孙中山像邮票',
+        denomination: 2,
+        issueYear: 1931,
+        perforation: 'P12.5',
+        variety: '漏齿',
+        positionOnCover: '左下',
+        createdAt: SEED_TS
+      },
+      3
+    ),
+    ek(
+      'CV-0004',
+      {
+        stampName: '普八邮票',
+        denomination: 8,
+        issueYear: 1955,
+        perforation: 'P14',
+        variety: '正品',
+        positionOnCover: '右上',
+        createdAt: SEED_TS
+      },
+      4
+    )
   ]
 }
 

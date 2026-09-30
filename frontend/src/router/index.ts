@@ -34,6 +34,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/SearchView.vue'),
     meta: { title: '综合检索' }
   },
+  {
+    path: '/merge',
+    name: 'merge',
+    component: () => import('@/pages/MergeCenter.vue'),
+    meta: { title: '离线合并' }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/postmarks' }
 ]
 
