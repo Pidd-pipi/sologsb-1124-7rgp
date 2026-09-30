@@ -12,6 +12,8 @@ export interface FrankingItem {
 
 export interface Cover {
   id?: number
+  /** 稳定编目键：跨设备导出 / 合并时识别同一记录的 GUID */
+  guid: string
   /** 封号，如 CV-0001 */
   coverNo: string
   sentFrom: string
@@ -50,6 +52,7 @@ export const CONDITION_GRADES: ConditionGrade[] = ['上品', '中品', '下品']
 /** 生成一条空白实寄封记录，供表单初始化使用。 */
 export function createEmptyCover(): Cover {
   return {
+    guid: '',
     coverNo: '',
     sentFrom: '',
     sentTo: '',

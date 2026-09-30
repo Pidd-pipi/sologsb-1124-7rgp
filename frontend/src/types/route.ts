@@ -26,6 +26,8 @@ export interface TimelineNode {
 
 export interface PostalRoute {
   id?: number
+  /** 稳定编目键：跨设备导出 / 合并时识别同一记录的 GUID */
+  guid: string
   /** 邮路号，如 RT-0001 */
   routeNo: string
   name: string
@@ -47,6 +49,7 @@ export const TRANSPORT_MODES: TransportMode[] = ['步班', '船运', '铁路', '
 /** 生成一条空白邮路记录，供表单初始化使用。 */
 export function createEmptyRoute(): PostalRoute {
   return {
+    guid: '',
     routeNo: '',
     name: '',
     era: '',

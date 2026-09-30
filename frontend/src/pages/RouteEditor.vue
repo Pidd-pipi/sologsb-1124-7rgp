@@ -78,6 +78,7 @@ const fallbackTimeline = computed<TimelineNode[]>(() => {
   return buildTimeline(
     {
       id: 0,
+      guid: '',
       coverNo: 'REF',
       sentFrom: route.value.nodes[0]?.office ?? '',
       sentTo: route.value.nodes[route.value.nodes.length - 1]?.office ?? '',

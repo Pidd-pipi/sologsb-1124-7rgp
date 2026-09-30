@@ -5,6 +5,8 @@ export type AssetSide = 'sample' | 'front' | 'back'
 
 export interface CatalogAsset {
   id?: number
+  /** 稳定编目键：跨设备导出 / 合并时识别同一张原图的 GUID */
+  guid: string
   ownerType: AssetOwnerType
   ownerId: number
   side: AssetSide

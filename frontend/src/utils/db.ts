@@ -2,16 +2,17 @@
  * IndexedDB（Dexie）封装：表结构、版本号与升级迁移、首次运行的样例数据。
  * 戳样与封的正反面原图单独放在 assets 表。
  */
-import Dexie, { type Table } from 'dexie'
+import Dexie, { type Table, type Transaction } from 'dexie'
 import type { Postmark } from '@/types/postmark'
 import type { Cover } from '@/types/cover'
 import type { PostalRoute } from '@/types/route'
 import type { StamplessEntry } from '@/types/stampentry'
 import type { AssetOwnerType, AssetSide, CatalogAsset } from '@/types/asset'
+import { guid } from '@/utils/id'
 
 export const DB_NAME = 'gbpostmark'
 /** 当前数据结构版本号，升级迁移写在下面对应的 version() 中 */
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 export class GbPostmarkDatabase extends Dexie {
   postmarks!: Table<Postmark, number>
@@ -73,6 +74,34 @@ export class GbPostmarkDatabase extends Dexie {
             if (typeof rt.totalDays !== 'number') rt.totalDays = 0
           })
       })
+
+    // v3：为既有记录补齐稳定编目键 guid，供跨设备导出 / 合并时识别同一记录
+    this.version(3)
+      .stores({
+        postmarks:
+          '++id, pmNo, type, office, province, yearFrom, yearTo, scarceLevel, inkColor, bilingual, guid',
+        covers:
+          '++id, coverNo, sentFrom, sentTo, postDate, conditionGrade, registered, routeId, acquireFrom, guid',
+        routes: '++id, routeNo, name, era, transport, totalDays, guid',
+        stampEntries: '++id, coverId, stampName, variety, issueYear, guid',
+        assets: '++id, ownerType, ownerId, side, [ownerType+ownerId], guid'
+      })
+      .upgrade(async (tx) => {
+        await backfillGuidsInTransaction(tx)
+      })
+  }
+}
+
+/** 在升级事务内为缺少 guid 的记录补齐稳定编目键。 */
+async function backfillGuidsInTransaction(tx: Transaction): Promise<void> {
+  const tables = ['postmarks', 'covers', 'routes', 'stampEntries', 'assets'] as const
+  for (const name of tables) {
+    await tx
+      .table(name)
+      .toCollection()
+      .modify((record: { guid?: string }) => {
+        if (!record.guid) record.guid = guid()
+      })
   }
 }
 
@@ -82,6 +111,21 @@ export const db = new GbPostmarkDatabase()
 export async function initDatabase(): Promise<void> {
   await db.open()
   await seedIfEmpty()
+  // 安全兜底：无论是否走过 v3 升级，都保证所有记录持有稳定编目键 guid
+  await backfillMissingGuids()
+}
+
+/** 为所有缺少 guid 的记录补齐稳定编目键（幂等，可重复调用）。 */
+export async function backfillMissingGuids(): Promise<void> {
+  const tables = ['postmarks', 'covers', 'routes', 'stampEntries', 'assets'] as const
+  for (const name of tables) {
+    await db
+      .table(name)
+      .toCollection()
+      .modify((record: { guid?: string }) => {
+        if (!record.guid) record.guid = guid()
+      })
+  }
 }
 
 /** 写入或覆盖一张原图（同 owner + side 视为同一张）。 */
@@ -99,7 +143,7 @@ export async function saveAsset(input: {
     await db.assets.update(found.id, { ...input })
     return found.id
   }
-  return db.assets.add({ ...input })
+  return db.assets.add({ ...input, guid: guid() })
 }
 
 /** 读取一张原图，不存在返回空串。 */
@@ -181,6 +225,7 @@ function seedPostmarks(): Postmark[] {
   return [
     base({
       id: 1,
+      guid: '',
       pmNo: 'PM-0001',
       type: '圆形日戳',
       office: '上海邮政总局',
@@ -200,6 +245,7 @@ function seedPostmarks(): Postmark[] {
     }),
     base({
       id: 2,
+      guid: '',
       pmNo: 'PM-0002',
       type: '滚筒戳',
       office: '天津邮政局',
@@ -219,6 +265,7 @@ function seedPostmarks(): Postmark[] {
     }),
     base({
       id: 3,
+      guid: '',
       pmNo: 'PM-0003',
       type: '机盖波纹戳',
       office: '广州邮局',
@@ -238,6 +285,7 @@ function seedPostmarks(): Postmark[] {
     }),
     base({
       id: 4,
+      guid: '',
       pmNo: 'PM-0004',
       type: '纪念戳',
       office: '南京邮局',
@@ -257,6 +305,7 @@ function seedPostmarks(): Postmark[] {
     }),
     base({
       id: 5,
+      guid: '',
       pmNo: 'PM-0005',
       type: '风景戳',
       office: '杭州西湖邮局',
@@ -276,6 +325,7 @@ function seedPostmarks(): Postmark[] {
     }),
     base({
       id: 6,
+      guid: '',
       pmNo: 'PM-0006',
       type: '军邮戳',
       office: '军邮 231 局',
@@ -300,6 +350,7 @@ function seedRoutes(): PostalRoute[] {
   return [
     {
       id: 1,
+      guid: '',
       routeNo: 'RT-0001',
       name: '沪宁铁路邮路',
       era: '1910-1919',
@@ -318,6 +369,7 @@ function seedRoutes(): PostalRoute[] {
     },
     {
       id: 2,
+      guid: '',
       routeNo: 'RT-0002',
       name: '津浦—沪宁联运邮路',
       era: '1920-1929',
@@ -337,6 +389,7 @@ function seedRoutes(): PostalRoute[] {
     },
     {
       id: 3,
+      guid: '',
       routeNo: 'RT-0003',
       name: '长江船运邮路',
       era: '1930-1939',
@@ -360,6 +413,7 @@ function seedCovers(): Cover[] {
   return [
     {
       id: 1,
+      guid: '',
       coverNo: 'CV-0001',
       sentFrom: '上海',
       sentTo: '南京',
@@ -385,6 +439,7 @@ function seedCovers(): Cover[] {
     },
     {
       id: 2,
+      guid: '',
       coverNo: 'CV-0002',
       sentFrom: '天津',
       sentTo: '上海',
@@ -407,6 +462,7 @@ function seedCovers(): Cover[] {
     },
     {
       id: 3,
+      guid: '',
       coverNo: 'CV-0003',
       sentFrom: '广州',
       sentTo: '武汉',
@@ -432,6 +488,7 @@ function seedCovers(): Cover[] {
     },
     {
       id: 4,
+      guid: '',
       coverNo: 'CV-0004',
       sentFrom: '南京',
       sentTo: '杭州',
@@ -459,6 +516,7 @@ function seedStampEntries(): StamplessEntry[] {
   return [
     {
       id: 1,
+      guid: '',
       coverId: 1,
       stampName: '蟠龙邮票',
       denomination: 3,
@@ -470,6 +528,7 @@ function seedStampEntries(): StamplessEntry[] {
     },
     {
       id: 2,
+      guid: '',
       coverId: 1,
       stampName: '蟠龙邮票',
       denomination: 1,
@@ -481,6 +540,7 @@ function seedStampEntries(): StamplessEntry[] {
     },
     {
       id: 3,
+      guid: '',
       coverId: 2,
       stampName: '帆船邮票',
       denomination: 4,
@@ -492,6 +552,7 @@ function seedStampEntries(): StamplessEntry[] {
     },
     {
       id: 4,
+      guid: '',
       coverId: 3,
       stampName: '孙中山像邮票',
       denomination: 5,
@@ -503,6 +564,7 @@ function seedStampEntries(): StamplessEntry[] {
     },
     {
       id: 5,
+      guid: '',
       coverId: 3,
       stampName: '孙中山像邮票',
       denomination: 2,
@@ -514,6 +576,7 @@ function seedStampEntries(): StamplessEntry[] {
     },
     {
       id: 6,
+      guid: '',
       coverId: 4,
       stampName: '普八邮票',
       denomination: 8,

@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { db } from '@/utils/db'
 import type { PostalRoute, RouteNode } from '@/types/route'
 import { daysBetween, isValidDate } from '@/utils/dateRange'
-import { nextSerialNo, nowIso, uid } from '@/utils/id'
+import { nextSerialNo, nowIso, guid, uid } from '@/utils/id'
 
 /** 由节点日期计算全程天数：取首个与末个有效日期的间隔。 */
 export function computeTotalDays(nodes: RouteNode[]): number {
@@ -41,6 +41,7 @@ export const useRouteStore = defineStore('route', () => {
     const now = nowIso()
     const record: PostalRoute = {
       ...input,
+      guid: input.guid || guid(),
       routeNo: input.routeNo || nextRouteNo(),
       nodes: input.nodes.map((n) => ({ ...n, key: n.key || uid('node') })),
       totalDays: computeTotalDays(input.nodes),

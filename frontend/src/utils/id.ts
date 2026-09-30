@@ -6,6 +6,21 @@ export function uid(prefix = 'k'): string {
   return `${prefix}-${Date.now().toString(36)}-${rnd}`
 }
 
+/**
+ * 生成稳定编目键（GUID）：记录在两台电脑之间导出 / 合并时的同一身份标识。
+ * 与本地自增 id 不同，guid 不随导入导出改变，是跨设备对账的依据。
+ */
+export function guid(): string {
+  const c = globalThis.crypto as Crypto | undefined
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  // 兜底：crypto 不可用时按 UUID v4 格式拼装
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
+    const r = (Math.random() * 16) | 0
+    const v = ch === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
 /** 当前时间的 ISO 字符串。 */
 export function nowIso(): string {
   return new Date().toISOString()

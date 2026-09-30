@@ -14,6 +14,8 @@ export type CoverPosition =
 
 export interface StamplessEntry {
   id?: number
+  /** 稳定编目键：跨设备导出 / 合并时识别同一记录的 GUID */
+  guid: string
   /** 所属实寄封 id */
   coverId: number
   /** 邮票名称 */
@@ -43,6 +45,7 @@ export const COVER_POSITIONS: CoverPosition[] = [
 /** 生成一条空白票戳组合记录，供表单初始化使用。 */
 export function createEmptyStampEntry(coverId: number): StamplessEntry {
   return {
+    guid: '',
     coverId,
     stampName: '',
     denomination: 0,

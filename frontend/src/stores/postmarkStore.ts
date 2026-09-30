@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { db, saveAsset } from '@/utils/db'
 import type { Postmark } from '@/types/postmark'
-import { nextSerialNo, nowIso } from '@/utils/id'
+import { nextSerialNo, nowIso, guid } from '@/utils/id'
 
 export interface ImagePayload {
   dataUrl: string
@@ -33,6 +33,7 @@ export const usePostmarkStore = defineStore('postmark', () => {
     const now = nowIso()
     const record: Postmark = {
       ...input,
+      guid: input.guid || guid(),
       pmNo: input.pmNo || nextPmNo(),
       lettering: { ...input.lettering },
       createdAt: now,

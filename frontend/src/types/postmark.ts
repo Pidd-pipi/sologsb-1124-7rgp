@@ -21,6 +21,8 @@ export interface PostmarkLettering {
 
 export interface Postmark {
   id?: number
+  /** 稳定编目键：跨设备导出 / 合并时识别同一记录的 GUID，不随本地 id 变化 */
+  guid: string
   /** 编目号，如 PM-0001 */
   pmNo: string
   type: PostmarkType
@@ -79,6 +81,7 @@ export const PROVINCES: string[] = [
 /** 生成一条空白邮戳记录，供表单初始化使用。 */
 export function createEmptyPostmark(): Postmark {
   return {
+    guid: '',
     pmNo: '',
     type: '圆形日戳',
     office: '',
